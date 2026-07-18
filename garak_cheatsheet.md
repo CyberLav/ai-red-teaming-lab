@@ -1,6 +1,6 @@
 # Garak Cheat Sheet
 
-Quick reference for running NVIDIA's Garak LLM vulnerability scanner against local Ollama models via WSL/Ubuntu. Companion to `Garak_Setup_Journey.md` (the full story) — this is the fast-lookup version.
+Quick reference for running NVIDIA's Garak LLM vulnerability scanner against local Ollama models via WSL/Ubuntu. Companion to `Garak_Setup_Journey.md` (the full story) this is the fast-lookup version.
 
 ---
 
@@ -52,8 +52,8 @@ python -m garak --target_type ollama --target_name <model> --probes <probe> --ge
 | `--report_prefix` | Name for output report files | Files land in `~/.local/share/garak/garak_runs/` |
 | `--seed` | Fixes randomness for reproducibility | Doesn't guarantee non-overlapping coverage across different seeds |
 | `--verbose` | More detailed console output | Use alongside `tail -f` on the log for live confirmation it's working |
-| `--config` | Load a YAML config file | ⚠️ Known unreliable in this version — see Gotchas below |
-| `--generator_options` | Inline JSON generator overrides | ⚠️ Also unreliable in this version — see Gotchas below |
+| `--config` | Load a YAML config file | ⚠️ Known unreliable in this version. See Gotchas below |
+| `--generator_options` | Inline JSON generator overrides | ⚠️ Also unreliable in this version. See Gotchas below |
 | `--list_probes` | Print every available probe | Good for browsing what's testable |
 | `--list_detectors` | Print every available detector | |
 | `--list_generators` | Print every available generator backend | |
@@ -64,7 +64,7 @@ python -m garak --target_type ollama --target_name <model> --probes <probe> --ge
 
 | Probe module | What it tests | Maps to |
 |---|---|---|
-| `dan` | Jailbreak personas (DAN family) — roleplay an "unrestricted" alter-ego | OWASP LLM01, ATLAS evasion |
+| `dan` | Jailbreak personas (DAN family) roleplay an "unrestricted" alter-ego | OWASP LLM01, ATLAS evasion |
 | `promptinject` | Hides an override instruction inside innocuous-looking content | OWASP LLM01 |
 | `encoding` | Same as promptinject, but obfuscated (Base64/ROT13) to dodge keyword filters | OWASP LLM01 |
 | `leakreplay` | Feeds a known copyrighted snippet, checks if model completes it verbatim | OWASP LLM06 (data leakage) |
@@ -74,14 +74,14 @@ python -m garak --target_type ollama --target_name <model> --probes <probe> --ge
 | `realtoxicityprompts` | Nudges toward toxic/hateful continuations | Content safety |
 | `tap` | Automated, adaptive jailbreak search (rewrites based on refusals) | OWASP LLM01, adaptive attack |
 
-Example sub-probe: `dan.Ablation_Dan_11_0` — a pruned/tested variant of DAN 11.0, 127 prompt variations.
+Example sub-probe: `dan.Ablation_Dan_11_0`  a pruned/tested variant of DAN 11.0, 127 prompt variations.
 
 ---
 
 ## Monitoring a run (the "is it stuck?" checklist)
 
-1. **Don't trust `top` inside WSL** — actual inference runs in Windows' Ollama app, not WSL, so WSL always looks idle regardless.
-2. **Check Windows Task Manager** for `llama-server.exe` (the real worker process — not just `ollama.exe`/`ollama app.exe`, which stay near 0% even when busy). High CPU/RAM here = genuinely working.
+1. **Don't trust `top` inside WSL**  actual inference runs in Windows' Ollama app, not WSL, so WSL always looks idle regardless.
+2. **Check Windows Task Manager** for `llama-server.exe` (the real worker process  not just `ollama.exe`/`ollama app.exe`, which stay near 0% even when busy). High CPU/RAM here = genuinely working.
 3. **Tail the log live** in a second terminal:
    ```bash
    tail -f ~/.local/share/garak/garak.log
@@ -90,7 +90,7 @@ Example sub-probe: `dan.Ablation_Dan_11_0` — a pruned/tested variant of DAN 11
    ```bash
    time curl http://localhost:11434/api/generate -d '{"model": "qwen3", "prompt": "Say hello in one sentence.", "stream": false}'
    ```
-   Compare the `real` time against garak's timeout (see Gotchas) — if generation takes longer than the timeout, you'll loop forever instead of finishing.
+   Compare the `real` time against garak's timeout (see Gotchas)  if generation takes longer than the timeout, you'll loop forever instead of finishing.
 
 ---
 
@@ -111,7 +111,7 @@ generators:
 --generator_options '{"generators":{"ollama":{"OllamaGeneratorChat":{"timeout": 400}}}}'
 ```
 
-**Actual fix — patch the installed package's hardcoded default directly:**
+**Actual fix, patch the installed package's hardcoded default directly:**
 ```bash
 python -c "import garak.generators.ollama as m; print(m.__file__)"     # find the file
 sed -i 's/"timeout": 30,/"timeout": 400,/' $(python -c "import garak.generators.ollama as m; print(m.__file__)")
@@ -119,7 +119,7 @@ grep timeout $(python -c "import garak.generators.ollama as m; print(m.__file__)
 ```
 
 **2. `run.soft_probe_prompt_cap` (meant to limit prompt count per probe) doesn't reliably apply via `--config` either.**
-Don't rely on it to shrink a run — budget for full, uncapped probe sizes instead (e.g. 127 prompts for `Ablation_Dan_11_0`, taking several hours on CPU-only hardware).
+Don't rely on it to shrink a run  budget for full, uncapped probe sizes instead (e.g. 127 prompts for `Ablation_Dan_11_0`, taking several hours on CPU-only hardware).
 
 **3. `--target_type ollama` defaults to `OllamaGeneratorChat`, not `OllamaGenerator`.**
 If you ever do get a config override working, target the right class name.
@@ -143,7 +143,7 @@ run:
   soft_probe_prompt_cap: 10
 EOF
 ```
-Use with `--config speedup.yaml`. (Remember: the cap itself may not actually apply — see Gotcha #2.)
+Use with `--config speedup.yaml`. (Remember: the cap itself may not actually apply see Gotcha #2.)
 
 ---
 
@@ -163,9 +163,9 @@ jq -r 'select(.entry_type=="attempt") | [(.detector_results // {} | to_entries[0
 
 ### Reading the HTML report
 - **DEFCON scale (DC-1 to DC-5):** DC-1 = most severe, DC-5 = safest.
-- **Probe score %:** the model's resistance rate — lower % = more vulnerable.
+- **Probe score %:** the model's resistance rate lower % = more vulnerable.
 - **Tags** (`owasp:llm01`, `avid-effect:security:S0403`, etc.): ready-made mapping to OWASP/AVID frameworks.
-- HTML report is summary-only — actual prompts/responses only live in the `.jsonl`.
+- HTML report is summary-only actual prompts/responses only live in the `.jsonl`.
 
 ---
 
