@@ -1,0 +1,13 @@
+# Python
+garak-env/
+__pycache__/
+*.pyc
+
+# Garak output
+*.jsonl
+*.report.html
+garak_runs/
+
+# OS
+.DS_Store
+Thumbs.db
